@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>India City COVID Tracker</title>
+  <style>
+    body {font-family: 'Segoe UI', sans-serif; margin:0; background:#f4f6f9; padding:40px 20px;}
+    .card {max-width:500px;margin:auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.1);}
+    h2 {text-align:center;color:#333;}
+    input, button {width:100%;padding:12px;margin:12px 0;font-size:16px;border-radius:8px;border:1px solid #ccc;}
+    button {background:#007bff;color:#fff;border:none;cursor:pointer;transition:background 0.3s;}
+    button:hover {background:#0056b3;}
+    .result {background:#e6ffed;border-left:5px solid #28a745;padding:20px;border-radius:8px;margin-top:20px;}
+    .error {background:#f8d7da;color:#721c24;border-left:5px solid #dc3545;padding:12px;border-radius:8px;margin-top:12px;}
+    .result p, .error p {margin:6px 0;font-size:16px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🦠 India City COVID Tracker</h2>
+    <input type="text" id="cityInput" placeholder="Enter district/city (e.g. Ahmedabad)" />
+    <button onclick="fetchCity()">Get COVID Data</button>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    let covidData = {};
+
+    async function loadData() {
+      const res = await fetch('https://data.incovid19.org/v4/min/data.min.json');
+      covidData = await res.json();
+    }
+    window.onload = loadData;
+
+    function fetchCity() {
+      const city = document.getElementById('cityInput').value.trim();
+      if (!city) {
+        output.innerHTML = `<div class="error"><p>Please enter a city name.</p></div>`;
+        return;
+      }
+      let found = false;
+      for (let state in covidData) {
+        const districts = covidData[state]?.districts || {};
+        for (let district in districts) {
+          if (district.toLowerCase() === city.toLowerCase()) {
+            const d = districts[district].total || {};
+            const confirmed = d.confirmed || 0;
+            const recovered = d.recovered || 0;
+            const deceased = d.deceased || 0;
+            const active = confirmed - recovered - deceased;
+            output.innerHTML = `<div class="result">
+                <h3>${district}, ${state}</h3>
+                <p><strong>Confirmed:</strong> ${confirmed.toLocaleString()}</p>
+                <p><strong>Recovered:</strong> ${recovered.toLocaleString()}</p>
+                <p><strong>Deceased:</strong> ${deceased.toLocaleString()}</p>
+                <p><strong>Active:</strong> ${active.toLocaleString()}</p>
+              </div>`;
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (!found) {
+        output.innerHTML = `<div class="error"><p>No data found for "${city}". Please check spelling.</p></div>`;
+      }
+    }
+  </script>
+</body>
+</html>
